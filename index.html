@@ -1,1 +1,39 @@
-<h1>Hello pig</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Space Reservation</title>
+    <link rel="stylesheet" href="style.css">
+    </head>
+<body>
+    <h1>Shared Space Status & Bookings</h1>
+
+    <div>
+        <label for="userName">Who are you?</label>
+        <select id="userName">
+            <option value="">Select User</option>
+            <option value="Friend1">Friend 1</option>
+            <option value="Friend2">Friend 2</option>
+            </select>
+    </div>
+
+    <section id="current-status">
+        <h2>Currently in the Space</h2>
+        <ul id="whos-here-list">
+            </ul>
+        <button id="toggleSpaceStatusBtn">I'm in the space</button>
+    </section>
+
+    <section id="calendar-booking">
+        <h2>Book Your Time</h2>
+        <div id="calendar">
+            </div>
+        </section>
+
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
