@@ -4,6 +4,7 @@ const firebaseConfig = {
   authDomain: "luola-reservation.firebaseapp.com",
   projectId: "luola-reservation",
   storageBucket: "luola-reservation.firebasestorage.app",
+  databaseURL: "https://luola-reservation-default-rtdb.europe-west1.firebasedatabase.app",
   messagingSenderId: "79746628180",
   appId: "1:79746628180:web:1c4347fd18aa17b9668bc1",
   measurementId: "G-M84G9ZSERV"
@@ -55,6 +56,7 @@ signUpBtn.addEventListener('click', () => {
 
 // Sign In
 signInBtn.addEventListener('click', () => {
+  console.log("Sign In button clicked"); // <-- ADD THIS LINE
   const email = emailInput.value;
   const password = passwordInput.value;
   authErrorP.textContent = ''; // Clear previous errors
@@ -63,11 +65,11 @@ signInBtn.addEventListener('click', () => {
       .then((userCredential) => {
           // Signed in
           const user = userCredential.user;
-          console.log('Signed in:', user.email);
+          console.log('Signed in successfully via signInWithEmailAndPassword:', user.email); // Check console for this
       })
       .catch((error) => {
-          console.error('Sign in error:', error);
-          authErrorP.textContent = error.message;
+          console.error('Sign in error in .catch:', error); // Check console for this
+          authErrorP.textContent = `Sign In Error: ${error.message}`; // Display error on page
       });
 });
 
@@ -84,35 +86,36 @@ signOutBtn.addEventListener('click', () => {
 });
 
 // --- Auth State Listener ---
-// This is crucial for updating the UI based on auth state
 firebase.auth().onAuthStateChanged((user) => {
+  console.log("onAuthStateChanged triggered. User object:", user); // <-- ADD THIS LINE
   authErrorP.textContent = ''; // Clear errors on state change
+
+  // Double-check these DOM elements are correctly fetched at the top of your app.js
+  // const authForm = document.getElementById('auth-form');
+  // const userInfoDiv = document.getElementById('userInfo');
+  // const userEmailSpan = document.getElementById('userEmail');
+
   if (user) {
       // User is signed in
-      console.log('User is signed in:', user.email, 'UID:', user.uid);
-      authForm.style.display = 'none';
-      userInfoDiv.style.display = 'block';
-      userEmailSpan.textContent = user.email; // Or user.displayName if you set it
+      console.log('onAuthStateChanged: User IS signed in. Updating UI to show user info.', user.email); // <-- ADD THIS
+      if (authForm) authForm.style.display = 'none';
+      if (userInfoDiv) userInfoDiv.style.display = 'block';
+      if (userEmailSpan) userEmailSpan.textContent = user.email; // Or user.displayName if you set it
 
-      // Enable features that require authentication
-      toggleSpaceStatusBtn.disabled = false;
-
-      // Fetch current presence (since rules might depend on auth)
-      // and potentially re-evaluate button text
-      loadCurrentPresence(); // We'll wrap your existing listener in this function
+      if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.disabled = false;
+      loadCurrentPresence(); // Make sure this function doesn't have errors
 
   } else {
       // User is signed out
-      console.log('User is signed out');
-      authForm.style.display = 'block';
-      userInfoDiv.style.display = 'none';
-      userEmailSpan.textContent = '';
+      console.log('onAuthStateChanged: User IS NOT signed in or is signed out. Updating UI to show auth form.'); // <-- ADD THIS
+      if (authForm) authForm.style.display = 'block';
+      if (userInfoDiv) userInfoDiv.style.display = 'none';
+      if (userEmailSpan) userEmailSpan.textContent = '';
 
-      // Disable features or clear data that require authentication
-      toggleSpaceStatusBtn.disabled = true;
-      whosHereList.innerHTML = '<li>Please sign in to see status.</li>'; // Clear presence list
+      if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.disabled = true;
+      if (whosHereList) whosHereList.innerHTML = '<li>Please sign in to see status.</li>';
       currentUsersInSpace = {};
-      updateButtonText(); // Reset button text
+      updateButtonText();
   }
 });
 
