@@ -15,59 +15,190 @@ firebase.initializeApp(firebaseConfig);
 
 // In app.js, after Firebase init and getting DOM elements
 
+// Authentication DOM Elements
+const authSection = document.getElementById('auth-section');
+const authForm = document.getElementById('auth-form');
+const userInfoDiv = document.getElementById('userInfo');
+const userEmailSpan = document.getElementById('userEmail');
+const emailInput = document.getElementById('emailInput');
+const passwordInput = document.getElementById('passwordInput');
+const signUpBtn = document.getElementById('signUpBtn');
+const signInBtn = document.getElementById('signInBtn');
+const signOutBtn = document.getElementById('signOutBtn');
+const authErrorP = document.getElementById('authError');
 const whosHereList = document.getElementById('whos-here-list');
 const toggleSpaceStatusBtn = document.getElementById('toggleSpaceStatusBtn');
 const userNameSelect = document.getElementById('userName');
 let currentUsersInSpace = {}; // To keep track locally
 
-// Listen for who is in the space
-database.ref('current_presence').on('value', (snapshot) => {
-    whosHereList.innerHTML = ''; // Clear current list
-    currentUsersInSpace = snapshot.val() || {}; // Get users or empty object if none
-    if (Object.keys(currentUsersInSpace).length === 0) {
-        const listItem = document.createElement('li');
-        listItem.textContent = 'The space is currently empty.';
-        whosHereList.appendChild(listItem);
-    } else {
-        for (const user in currentUsersInSpace) {
-            const listItem = document.createElement('li');
-            listItem.textContent = user;
-            whosHereList.appendChild(listItem);
-        }
-    }
-    updateButtonText(); // Update button based on current user's status
+// --- Authentication Functions ---
+
+// Sign Up
+signUpBtn.addEventListener('click', () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  authErrorP.textContent = ''; // Clear previous errors
+
+  firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+          // Signed up and signed in
+          const user = userCredential.user;
+          console.log('Signed up and signed in:', user.email);
+          // You might want to store user profile info (like a chosen display name) here
+          // e.g., database.ref('users/' + user.uid).set({ email: user.email, displayName: "New User" });
+      })
+      .catch((error) => {
+          console.error('Sign up error:', error);
+          authErrorP.textContent = error.message;
+      });
 });
 
-// Toggle status
-toggleSpaceStatusBtn.addEventListener('click', () => {
-    const selectedUser = userNameSelect.value;
-    if (!selectedUser) {
-        alert('Please select your name first!');
-        return;
-    }
+// Sign In
+signInBtn.addEventListener('click', () => {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  authErrorP.textContent = ''; // Clear previous errors
 
-    const userRef = database.ref('current_presence/' + selectedUser);
-    if (currentUsersInSpace[selectedUser]) {
-        // User is in, so remove them
-        userRef.remove()
-            .then(() => console.log(selectedUser + ' left the space.'))
-            .catch(error => console.error('Error leaving space:', error));
-    } else {
-        // User is not in, so add them
-        userRef.set(true)
-            .then(() => console.log(selectedUser + ' entered the space.'))
-            .catch(error => console.error('Error entering space:', error));
-    }
+  firebase.auth().signInWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+          // Signed in
+          const user = userCredential.user;
+          console.log('Signed in:', user.email);
+      })
+      .catch((error) => {
+          console.error('Sign in error:', error);
+          authErrorP.textContent = error.message;
+      });
 });
 
-function updateButtonText() {
-    const selectedUser = userNameSelect.value;
-    if (selectedUser && currentUsersInSpace[selectedUser]) {
-        toggleSpaceStatusBtn.textContent = 'I\'ve left the space';
-    } else {
-        toggleSpaceStatusBtn.textContent = 'I\'m in the space';
-    }
+// Sign Out
+signOutBtn.addEventListener('click', () => {
+  firebase.auth().signOut()
+      .then(() => {
+          console.log('Signed out');
+      })
+      .catch((error) => {
+          console.error('Sign out error:', error);
+          authErrorP.textContent = error.message;
+      });
+});
+
+// --- Auth State Listener ---
+// This is crucial for updating the UI based on auth state
+firebase.auth().onAuthStateChanged((user) => {
+  authErrorP.textContent = ''; // Clear errors on state change
+  if (user) {
+      // User is signed in
+      console.log('User is signed in:', user.email, 'UID:', user.uid);
+      authForm.style.display = 'none';
+      userInfoDiv.style.display = 'block';
+      userEmailSpan.textContent = user.email; // Or user.displayName if you set it
+
+      // Enable features that require authentication
+      toggleSpaceStatusBtn.disabled = false;
+
+      // Fetch current presence (since rules might depend on auth)
+      // and potentially re-evaluate button text
+      loadCurrentPresence(); // We'll wrap your existing listener in this function
+
+  } else {
+      // User is signed out
+      console.log('User is signed out');
+      authForm.style.display = 'block';
+      userInfoDiv.style.display = 'none';
+      userEmailSpan.textContent = '';
+
+      // Disable features or clear data that require authentication
+      toggleSpaceStatusBtn.disabled = true;
+      whosHereList.innerHTML = '<li>Please sign in to see status.</li>'; // Clear presence list
+      currentUsersInSpace = {};
+      updateButtonText(); // Reset button text
+  }
+});
+
+// Keep these variables global or accessible
+// let currentUsersInSpace = {}; // You already have this
+
+// Wrap your existing presence listener in a function
+function loadCurrentPresence() {
+  const presenceRef = database.ref('current_presence');
+  presenceRef.on('value', (snapshot) => {
+      whosHereList.innerHTML = ''; // Clear current list
+      currentUsersInSpace = snapshot.val() || {}; // Get users (keyed by UID) or empty object
+      
+      const currentUser = firebase.auth().currentUser; // Get current user for context
+
+      if (Object.keys(currentUsersInSpace).length === 0) {
+          const listItem = document.createElement('li');
+          listItem.textContent = 'The space is currently empty.';
+          whosHereList.appendChild(listItem);
+      } else {
+          console.log("Users currently in space (UIDs):", currentUsersInSpace);
+          for (const uidInSpace in currentUsersInSpace) {
+              if (currentUsersInSpace.hasOwnProperty(uidInSpace)) {
+                  const listItem = document.createElement('li');
+                  // Initially, display UID. For display names, you'll need to fetch them.
+                  // For example, if you store display names in /users/<uid>/displayName
+                  // You could do: database.ref('users/' + uidInSpace + '/displayName').once('value').then(nameSnap => { listItem.textContent = nameSnap.val() || uidInSpace; });
+                  // For now, let's keep it simple:
+                  if (currentUser && uidInSpace === currentUser.uid) {
+                      listItem.textContent = `You (${currentUser.email})`; // Identify the current user
+                  } else {
+                      listItem.textContent = `User UID: ${uidInSpace}`; // Later, replace with fetched display name
+                  }
+                  whosHereList.appendChild(listItem);
+              }
+          }
+      }
+      updateButtonText(); // Update button based on current user's status
+  }, (error) => {
+      console.error("Error loading presence data: ", error);
+      whosHereList.innerHTML = '<li>Error loading presence. Check console and DB rules.</li>';
+  });
 }
 
-// Update button if user selection changes
-userNameSelect.addEventListener('change', updateButtonText);
+
+// --- Update Toggle Status Button Logic ---
+toggleSpaceStatusBtn.addEventListener('click', () => {
+  const currentUser = firebase.auth().currentUser;
+
+  if (!currentUser) {
+      alert('Please sign in to update your status!');
+      return;
+  }
+
+  const userUid = currentUser.uid;
+  const userPresenceRef = database.ref('current_presence/' + userUid);
+
+  // Check against currentUsersInSpace which is keyed by UID
+  if (currentUsersInSpace[userUid]) {
+      // User is in, so remove them
+      userPresenceRef.remove()
+          .then(() => console.log(currentUser.email + ' left the space.'))
+          .catch(error => console.error('Error leaving space:', error));
+  } else {
+      // User is not in, so add them (your rules validate boolean or null)
+      userPresenceRef.set(true)
+          .then(() => console.log(currentUser.email + ' entered the space.'))
+          .catch(error => console.error('Error entering space:', error));
+  }
+});
+
+// --- Update `updateButtonText` function ---
+function updateButtonText() {
+  const currentUser = firebase.auth().currentUser;
+  if (currentUser && currentUsersInSpace[currentUser.uid]) {
+      toggleSpaceStatusBtn.textContent = 'I\'ve left the space';
+  } else {
+      toggleSpaceStatusBtn.textContent = 'I\'m in the space';
+  }
+  // Disable button if no user is logged in (also handled by onAuthStateChanged)
+  toggleSpaceStatusBtn.disabled = !currentUser;
+}
+
+// --- Remove or Re-purpose `userNameSelect` ---
+// The `userNameSelect` dropdown is no longer used to determine the user for presence updates.
+// You can remove its event listener or repurpose the dropdown if needed for other features.
+// For now, let's comment out its direct involvement with presence updates:
+// userNameSelect.removeEventListener('change', updateButtonText); // If you had this
+// Or ensure it doesn't interfere with the new logic.

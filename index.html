@@ -7,6 +7,24 @@
     <link rel="stylesheet" href="style.css">
     </head>
 <body>
+    <section id="auth-section">
+        <h2>User Authentication</h2>
+        <div id="auth-container">
+            <div id="auth-form" style="display: block;">
+                <input type="email" id="emailInput" placeholder="Email">
+                <input type="password" id="passwordInput" placeholder="Password">
+                <button id="signUpBtn">Sign Up</button>
+                <button id="signInBtn">Sign In</button>
+            </div>
+    
+            <div id="userInfo" style="display: none;">
+                <p>Welcome, <span id="userEmail"></span>!</p>
+                <button id="signOutBtn">Sign Out</button>
+            </div>
+        </div>
+        <p id="authError" style="color: red;"></p>
+    </section>
+    <hr>
     <h1>Shared Space Status & Bookings</h1>
 
     <div>
