@@ -31,7 +31,10 @@ const whosHereList = document.getElementById('whos-here-list');
 const toggleSpaceStatusBtn = document.getElementById('toggleSpaceStatusBtn');
 const userNameSelect = document.getElementById('userName');
 let currentUsersInSpace = {}; // To keep track locally
-
+const displayNameInput = document.getElementById('displayNameInput');
+const saveDisplayNameBtn = document.getElementById('saveDisplayNameBtn');
+const userDisplayNameWelcomeSpan = document.getElementById('userDisplayNameWelcome');
+const userEmailInfoSpan = document.getElementById('userEmailInfo'); // New span for email
 // --- Authentication Functions ---
 
 // Sign Up
@@ -87,30 +90,41 @@ signOutBtn.addEventListener('click', () => {
 
 // --- Auth State Listener ---
 firebase.auth().onAuthStateChanged((user) => {
-  console.log("onAuthStateChanged triggered. User object:", user); // <-- ADD THIS LINE
-  authErrorP.textContent = ''; // Clear errors on state change
-
-  // Double-check these DOM elements are correctly fetched at the top of your app.js
-  // const authForm = document.getElementById('auth-form');
-  // const userInfoDiv = document.getElementById('userInfo');
-  // const userEmailSpan = document.getElementById('userEmail');
+  console.log("onAuthStateChanged triggered. User object:", user);
+  authErrorP.textContent = '';
 
   if (user) {
-      // User is signed in
-      console.log('onAuthStateChanged: User IS signed in. Updating UI to show user info.', user.email); // <-- ADD THIS
+      console.log('onAuthStateChanged: User IS signed in.', user.email);
       if (authForm) authForm.style.display = 'none';
       if (userInfoDiv) userInfoDiv.style.display = 'block';
-      if (userEmailSpan) userEmailSpan.textContent = user.email; // Or user.displayName if you set it
+      if (userEmailInfoSpan) userEmailInfoSpan.textContent = user.email; // Display email
+
+      // Fetch and display user's display name
+      database.ref('users/' + user.uid + '/displayName').once('value')
+          .then((snapshot) => {
+              const displayName = snapshot.val();
+              if (userDisplayNameWelcomeSpan) {
+                  userDisplayNameWelcomeSpan.textContent = displayName || user.email; // Fallback to email if no display name
+              }
+              if (displayNameInput) {
+                  displayNameInput.value = displayName || ''; // Pre-fill input
+              }
+          })
+          .catch(error => {
+              console.error("Error fetching display name for welcome message:", error);
+              if (userDisplayNameWelcomeSpan) userDisplayNameWelcomeSpan.textContent = user.email; // Fallback
+          });
 
       if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.disabled = false;
-      loadCurrentPresence(); // Make sure this function doesn't have errors
+      loadCurrentPresence();
 
   } else {
-      // User is signed out
-      console.log('onAuthStateChanged: User IS NOT signed in or is signed out. Updating UI to show auth form.'); // <-- ADD THIS
+      console.log('onAuthStateChanged: User IS NOT signed in or is signed out.');
       if (authForm) authForm.style.display = 'block';
       if (userInfoDiv) userInfoDiv.style.display = 'none';
-      if (userEmailSpan) userEmailSpan.textContent = '';
+      if (userDisplayNameWelcomeSpan) userDisplayNameWelcomeSpan.textContent = '';
+      if (userEmailInfoSpan) userEmailInfoSpan.textContent = '';
+
 
       if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.disabled = true;
       if (whosHereList) whosHereList.innerHTML = '<li>Please sign in to see status.</li>';
@@ -118,7 +132,6 @@ firebase.auth().onAuthStateChanged((user) => {
       updateButtonText();
   }
 });
-
 // Keep these variables global or accessible
 // let currentUsersInSpace = {}; // You already have this
 
@@ -127,9 +140,8 @@ function loadCurrentPresence() {
   const presenceRef = database.ref('current_presence');
   presenceRef.on('value', (snapshot) => {
       whosHereList.innerHTML = ''; // Clear current list
-      currentUsersInSpace = snapshot.val() || {}; // Get users (keyed by UID) or empty object
-      
-      const currentUser = firebase.auth().currentUser; // Get current user for context
+      currentUsersInSpace = snapshot.val() || {};
+      const currentUser = firebase.auth().currentUser;
 
       if (Object.keys(currentUsersInSpace).length === 0) {
           const listItem = document.createElement('li');
@@ -137,26 +149,45 @@ function loadCurrentPresence() {
           whosHereList.appendChild(listItem);
       } else {
           console.log("Users currently in space (UIDs):", currentUsersInSpace);
-          for (const uidInSpace in currentUsersInSpace) {
+          Object.keys(currentUsersInSpace).forEach(uidInSpace => {
               if (currentUsersInSpace.hasOwnProperty(uidInSpace)) {
                   const listItem = document.createElement('li');
-                  // Initially, display UID. For display names, you'll need to fetch them.
-                  // For example, if you store display names in /users/<uid>/displayName
-                  // You could do: database.ref('users/' + uidInSpace + '/displayName').once('value').then(nameSnap => { listItem.textContent = nameSnap.val() || uidInSpace; });
-                  // For now, let's keep it simple:
-                  if (currentUser && uidInSpace === currentUser.uid) {
-                      listItem.textContent = `You (${currentUser.email})`; // Identify the current user
-                  } else {
-                      listItem.textContent = `User UID: ${uidInSpace}`; // Later, replace with fetched display name
-                  }
+                  // Give it a unique ID so we can update it asynchronously
+                  listItem.id = 'presence-user-' + uidInSpace;
+                  listItem.textContent = `Loading user (${uidInSpace.substring(0, 6)})...`; // Placeholder
                   whosHereList.appendChild(listItem);
+
+                  // Fetch display name for this UID
+                  database.ref('users/' + uidInSpace + '/displayName').once('value')
+                      .then(nameSnapshot => {
+                          const displayName = nameSnapshot.val();
+                          const existingListItem = document.getElementById('presence-user-' + uidInSpace);
+
+                          if (existingListItem) { // Check if element still exists
+                              if (currentUser && uidInSpace === currentUser.uid) {
+                                  // It's the current logged-in user
+                                  existingListItem.textContent = `You (${displayName || currentUser.email})`;
+                              } else {
+                                  // It's another user
+                                  existingListItem.textContent = displayName || `User (${uidInSpace.substring(0, 6)}...)`; // Fallback if no display name
+                              }
+                          }
+                      })
+                      .catch(error => {
+                          console.error(`Error fetching display name for UID ${uidInSpace}:`, error);
+                          const existingListItem = document.getElementById('presence-user-' + uidInSpace);
+                          if (existingListItem) {
+                              // Fallback display on error
+                              existingListItem.textContent = `User (${uidInSpace.substring(0, 6)}...)`;
+                          }
+                      });
               }
-          }
+          });
       }
-      updateButtonText(); // Update button based on current user's status
+      updateButtonText();
   }, (error) => {
       console.error("Error loading presence data: ", error);
-      whosHereList.innerHTML = '<li>Error loading presence. Check console and DB rules.</li>';
+      if (whosHereList) whosHereList.innerHTML = '<li>Error loading presence. Check console and DB rules.</li>';
   });
 }
 
@@ -199,9 +230,34 @@ function updateButtonText() {
   toggleSpaceStatusBtn.disabled = !currentUser;
 }
 
-// --- Remove or Re-purpose `userNameSelect` ---
-// The `userNameSelect` dropdown is no longer used to determine the user for presence updates.
-// You can remove its event listener or repurpose the dropdown if needed for other features.
-// For now, let's comment out its direct involvement with presence updates:
-// userNameSelect.removeEventListener('change', updateButtonText); // If you had this
-// Or ensure it doesn't interfere with the new logic.
+saveDisplayNameBtn.addEventListener('click', () => {
+  const currentUser = firebase.auth().currentUser;
+  const newDisplayName = displayNameInput.value.trim();
+
+  if (!currentUser) {
+      authErrorP.textContent = "You must be signed in to save a display name.";
+      return;
+  }
+  if (!newDisplayName) {
+      authErrorP.textContent = "Display name cannot be empty.";
+      return;
+  }
+  if (newDisplayName.length > 50) { // Matches rule validation
+      authErrorP.textContent = "Display name is too long (max 50 characters).";
+      return;
+  }
+
+
+  database.ref('users/' + currentUser.uid + '/displayName').set(newDisplayName)
+      .then(() => {
+          console.log("Display name updated successfully!");
+          authErrorP.textContent = "Display name saved!";
+          if (userDisplayNameWelcomeSpan) userDisplayNameWelcomeSpan.textContent = newDisplayName; // Update welcome message immediately
+          // Optionally, also update Firebase Auth profile display name (doesn't sync with DB automatically)
+          // currentUser.updateProfile({ displayName: newDisplayName }).catch(err => console.error("Error updating auth profile display name", err));
+      })
+      .catch((error) => {
+          console.error("Error saving display name:", error);
+          authErrorP.textContent = "Error saving display name: " + error.message;
+      });
+});

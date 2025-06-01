@@ -18,8 +18,11 @@
             </div>
     
             <div id="userInfo" style="display: none;">
-                <p>Welcome, <span id="userEmail"></span>!</p>
-                <button id="signOutBtn">Sign Out</button>
+                <p>Welcome, <span id="userDisplayNameWelcome"></span>! (<span id="userEmailInfo"></span>)</p> <div>
+                    <input type="text" id="displayNameInput" placeholder="Enter your Display Name">
+                    <button id="saveDisplayNameBtn">Save Name</button>
+                </div>
+                <button id="signOutBtn" style="margin-top: 10px;">Sign Out</button>
             </div>
         </div>
         <p id="authError" style="color: red;"></p>
