@@ -16,6 +16,9 @@ firebase.initializeApp(firebaseConfig);
 
 // In app.js, after Firebase init and getting DOM elements
 
+let currentUsersInSpace = {}; // To keep track locally
+let isConfirmingPresence = false;
+
 // Authentication DOM Elements
 const authSection = document.getElementById('auth-section');
 const authForm = document.getElementById('auth-form');
@@ -30,7 +33,6 @@ const authErrorP = document.getElementById('authError');
 const whosHereList = document.getElementById('whos-here-list');
 const toggleSpaceStatusBtn = document.getElementById('toggleSpaceStatusBtn');
 const userNameSelect = document.getElementById('userName');
-let currentUsersInSpace = {}; // To keep track locally
 const displayNameInput = document.getElementById('displayNameInput');
 const saveDisplayNameBtn = document.getElementById('saveDisplayNameBtn');
 const userDisplayNameWelcomeSpan = document.getElementById('userDisplayNameWelcome');
@@ -39,6 +41,7 @@ const authSectionTitle = document.getElementById('authSectionTitle');
 const userInfoMinimized = document.getElementById('userInfoMinimized');
 const userInfoExpanded = document.getElementById('userInfoExpanded');
 const manageAccountBtn = document.getElementById('manageAccountBtn');
+const presenceActivityInput = document.getElementById('presenceActivityInput');
 // --- Authentication Functions ---
 
 // Sign Up
@@ -178,86 +181,137 @@ function loadCurrentPresence() {
           listItem.textContent = 'the cave is currently empty.';
           whosHereList.appendChild(listItem);
       } else {
-          console.log("Users currently in cave (UIDs):", currentUsersInSpace);
+          console.log("Users currently in cave:", currentUsersInSpace);
           Object.keys(currentUsersInSpace).forEach(uidInSpace => {
               if (currentUsersInSpace.hasOwnProperty(uidInSpace)) {
+                  const presenceData = currentUsersInSpace[uidInSpace]; // This is now an object
                   const listItem = document.createElement('li');
-                  // Give it a unique ID so we can update it asynchronously
                   listItem.id = 'presence-user-' + uidInSpace;
-                  listItem.textContent = `Loading user (${uidInSpace.substring(0, 6)})...`; // Placeholder
-                  whosHereList.appendChild(listItem);
 
+                  let mainText = '';
                   // Fetch display name for this UID
                   database.ref('users/' + uidInSpace + '/displayName').once('value')
                       .then(nameSnapshot => {
                           const displayName = nameSnapshot.val();
-                          const existingListItem = document.getElementById('presence-user-' + uidInSpace);
+                          const userIdentifier = displayName || (currentUser && uidInSpace === currentUser.uid ? currentUser.email : `user (${uidInSpace.substring(0, 6)}...)`);
 
-                          if (existingListItem) { // Check if element still exists
-                              if (currentUser && uidInSpace === currentUser.uid) {
-                                  // It's the current logged-in user
-                                  existingListItem.textContent = `You (${displayName || currentUser.email})`;
-                              } else {
-                                  // It's another user
-                                  existingListItem.textContent = displayName || `User (${uidInSpace.substring(0, 6)}...)`; // Fallback if no display name
-                              }
+                          if (currentUser && uidInSpace === currentUser.uid) {
+                              mainText = `you (${userIdentifier})`;
+                          } else {
+                              mainText = userIdentifier;
+                          }
+
+                          let fullText = mainText;
+                          if (presenceData && presenceData.activity) {
+                              fullText += ` - ${presenceData.activity}`;
+                          }
+
+                          const existingListItem = document.getElementById('presence-user-' + uidInSpace);
+                          if(existingListItem) { // Check if element still exists (it should, we just created it)
+                              existingListItem.textContent = fullText;
+                          } else { // Fallback if ID somehow was lost before name fetch completed
+                              listItem.textContent = fullText; // Set text on originally created item
+                              whosHereList.appendChild(listItem); // Append if it wasn't (shouldn't happen often)
                           }
                       })
-                      .catch(error => {
-                          console.error(`Error fetching display name for UID ${uidInSpace}:`, error);
-                          const existingListItem = document.getElementById('presence-user-' + uidInSpace);
-                          if (existingListItem) {
-                              // Fallback display on error
-                              existingListItem.textContent = `User (${uidInSpace.substring(0, 6)}...)`;
+                      .catch(error => { /* ... your error handling ... */ 
+                          // Fallback if display name fetch fails
+                          let fallbackText = (currentUser && uidInSpace === currentUser.uid) ? `you (uid: ${uidInSpace.substring(0,6)})` : `user (${uidInSpace.substring(0, 6)}...)`;
+                          if (presenceData && presenceData.activity) {
+                              fallbackText += ` - ${presenceData.activity}`;
                           }
+                          const existingListItem = document.getElementById('presence-user-' + uidInSpace);
+                          if(existingListItem) existingListItem.textContent = fallbackText;
+                          else {listItem.textContent = fallbackText; whosHereList.appendChild(listItem);}
                       });
+                  // Append the list item with placeholder text immediately
+                  // The actual text will be filled when the displayName promise resolves
+                  listItem.textContent = `loading ${uidInSpace.substring(0,6)}...`;
+                  whosHereList.appendChild(listItem);
               }
           });
       }
+      // If a user just left, isConfirmingPresence should be reset if it was true for them
+      if (currentUser && !currentUsersInSpace[currentUser.uid] && isConfirmingPresence) {
+          isConfirmingPresence = false;
+          presenceActivityInput.style.display = 'none';
+      }
       updateButtonText();
-  }, (error) => {
-      console.error("Error loading presence data: ", error);
-      if (whosHereList) whosHereList.innerHTML = '<li>error loading presence. check console and DB rules.</li>';
-  });
+  }, (error) => { /* ... your error handling ... */ });
 }
 
 
 // --- Update Toggle Status Button Logic ---
 toggleSpaceStatusBtn.addEventListener('click', () => {
   const currentUser = firebase.auth().currentUser;
-
   if (!currentUser) {
-      alert('Please sign in to update your status!');
+      alert('sign in first, interloper!');
       return;
   }
-
   const userUid = currentUser.uid;
   const userPresenceRef = database.ref('current_presence/' + userUid);
 
-  // Check against currentUsersInSpace which is keyed by UID
-  if (currentUsersInSpace[userUid]) {
-      // User is in, so remove them
+  // Check if user is currently marked as in space (based on our local copy)
+  if (currentUsersInSpace[userUid]) { // User wants to leave
       userPresenceRef.remove()
-          .then(() => console.log(currentUser.email + ' left the cave.'))
-          .catch(error => console.error('Error leaving space:', error));
-  } else {
-      // User is not in, so add them (your rules validate boolean or null)
-      userPresenceRef.set(true)
-          .then(() => console.log(currentUser.email + ' entered the cave.'))
-          .catch(error => console.error('Error entering space:', error));
+          .then(() => {
+              console.log(currentUser.email + ' left the cave.');
+              presenceActivityInput.value = ''; // Clear activity field
+              presenceActivityInput.style.display = 'none';
+              isConfirmingPresence = false;
+              // updateButtonText will be called by onValue listener for current_presence
+          })
+          .catch(error => console.error('error leaving cave:', error));
+  } else { // User wants to enter or confirm entry
+      if (isConfirmingPresence) { // User is confirming their presence with activity
+          const activityText = presenceActivityInput.value.trim();
+          const presenceData = {
+              enteredAt: firebase.database.ServerValue.TIMESTAMP, // Good to have a timestamp
+              activity: activityText || "" // Store empty string if no activity
+          };
+          userPresenceRef.set(presenceData)
+              .then(() => {
+                  console.log(currentUser.email + ' entered the cave. activity: ' + activityText);
+                  presenceActivityInput.style.display = 'none';
+                  isConfirmingPresence = false;
+                  // updateButtonText will be called by onValue listener
+              })
+              .catch(error => console.error('error entering cave:', error));
+      } else { // User clicked "i'm here" for the first time, show activity input
+          presenceActivityInput.style.display = 'block';
+          presenceActivityInput.focus();
+          isConfirmingPresence = true;
+          updateButtonText(); // Update button text immediately to "confirm"
+      }
   }
 });
 
 // --- Update `updateButtonText` function ---
 function updateButtonText() {
   const currentUser = firebase.auth().currentUser;
-  if (currentUser && currentUsersInSpace[currentUser.uid]) {
-      toggleSpaceStatusBtn.textContent = 'I\'ve left the cave';
-  } else {
-      toggleSpaceStatusBtn.textContent = 'I\'m in the cave';
+  if (!currentUser) {
+      toggleSpaceStatusBtn.textContent = 'i\'m entering the cave'; // Or "sign in to enter"
+      toggleSpaceStatusBtn.disabled = true;
+      presenceActivityInput.style.display = 'none'; // Hide if logged out
+      isConfirmingPresence = false; // Reset state
+      return;
   }
-  // Disable button if no user is logged in (also handled by onAuthStateChanged)
-  toggleSpaceStatusBtn.disabled = !currentUser;
+
+  toggleSpaceStatusBtn.disabled = false; // Enable if logged in
+
+  if (currentUsersInSpace[currentUser.uid]) { // User is in the space
+      toggleSpaceStatusBtn.textContent = 'i\'ve left the cave';
+      presenceActivityInput.style.display = 'none'; // Hide if in space
+      isConfirmingPresence = false; // Reset state
+  } else { // User is not in the space
+      if (isConfirmingPresence) {
+          toggleSpaceStatusBtn.textContent = 'confirm i\'m here';
+          // presenceActivityInput should already be visible
+      } else {
+          toggleSpaceStatusBtn.textContent = 'i\'m entering the cave';
+          presenceActivityInput.style.display = 'none'; // Hide if not confirming
+      }
+  }
 }
 
 saveDisplayNameBtn.addEventListener('click', () => {

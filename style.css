@@ -9,6 +9,17 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+
+/* --- Global Text Case --- */
+body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, label, p, li, span, div {
+    text-transform: lowercase; /* Or use 'uppercase' if you prefer */
+}
+
+/* Special handling for input placeholders if needed (can be tricky) */
+::placeholder { /* Most modern browsers */
+    text-transform: lowercase; /* Or 'uppercase' */
+    /* You might need to adjust color if text-transform makes it less visible */
+}
 }
 
 :root {
@@ -189,7 +200,20 @@ section {
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius-main);
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
 }
+
+section p, section label, section ul {
+    text-align: left; /* Revert to left-align for paragraphs, labels, lists if default centering is too much */
+}
+/* Or be more specific: */
+#whos-here-list {
+    text-align: left; /* Keep list items aligned left */
+}
+#userInfoExpanded label {
+    text-align: left; /* Keep label aligned left */
+}
+
 
 /* Center content for larger screens, allow full width on mobile */
 #auth-section,
@@ -207,16 +231,39 @@ body > div:not(#drip-overlay) { /* Exclude the drip overlay */
 input[type="email"],
 input[type="password"],
 input[type="text"],
-select {
+select { /* Select might not look as "blobby" due to OS styling */
     width: 100%;
     padding: var(--padding-small);
     margin-bottom: var(--padding-small);
     background-color: var(--color-background);
     color: var(--color-text);
-    border: 1px solid var(--color-primary-slime);
-    border-radius: var(--border-radius-main);
+    border: 3px solid var(--color-primary-slime);
+    /* Change border-radius for a blob effect */
+    border-radius: 25px; /* Adjust this value for more or less roundness */
     font-family: var(--font-body);
     font-size: 1rem;
+    text-align: center; /* Center text inside input fields */
+}
+
+/* For the new presenceActivityInput, if you want specific styling: */
+#presenceActivityInput {
+    margin-top: 10px; /* Add some space above it */
+    border-radius: 20px; /* Example specific radius */
+}
+
+/* In your --- Current Status Section --- or --- Forms & Buttons --- */
+#presence-controls {
+    margin-top: 15px;
+    /* text-align: center; is already on section, so buttons/inputs should center if block/fit-content */
+}
+
+#presenceActivityInput {
+    display: block; /* Make it take its own line */
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 10px; /* Space before the button */
+    max-width: 300px; /* Limit width of activity input */
+    /* It will inherit the rounded styles from the global input[type="text"] rule */
 }
 
 input[type="email"]:focus,
@@ -304,6 +351,10 @@ button:disabled {
 #whos-here-list {
     list-style: none; /* Remove default bullets */
     padding-left: 0;
+}
+
+#userDisplayNameWelcome, #displayNameInput, #whos-here-list li span.activity-text {
+    text-transform: none; /* Allow natural casing for display names and activities */
 }
 
 #whos-here-list li {
