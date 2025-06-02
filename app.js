@@ -35,6 +35,10 @@ const displayNameInput = document.getElementById('displayNameInput');
 const saveDisplayNameBtn = document.getElementById('saveDisplayNameBtn');
 const userDisplayNameWelcomeSpan = document.getElementById('userDisplayNameWelcome');
 const userEmailInfoSpan = document.getElementById('userEmailInfo'); // New span for email
+const authSectionTitle = document.getElementById('authSectionTitle');
+const userInfoMinimized = document.getElementById('userInfoMinimized');
+const userInfoExpanded = document.getElementById('userInfoExpanded');
+const manageAccountBtn = document.getElementById('manageAccountBtn');
 // --- Authentication Functions ---
 
 // Sign Up
@@ -88,44 +92,70 @@ signOutBtn.addEventListener('click', () => {
       });
 });
 
+manageAccountBtn.addEventListener('click', () => {
+  const isExpanded = userInfoExpanded.style.display === 'block';
+  if (isExpanded) {
+      userInfoExpanded.style.display = 'none';
+      manageAccountBtn.textContent = 'Manage Account';
+      if (authSectionTitle) authSectionTitle.classList.remove('minimized-title'); // Optional: Revert title style
+  } else {
+      userInfoExpanded.style.display = 'block';
+      manageAccountBtn.textContent = 'Hide Settings';
+      if (authSectionTitle) authSectionTitle.classList.add('minimized-title'); // Optional: Change title style
+  }
+});
+
 // --- Auth State Listener ---
 firebase.auth().onAuthStateChanged((user) => {
   console.log("onAuthStateChanged triggered. User object:", user);
   authErrorP.textContent = '';
 
   if (user) {
+      // User is signed in
       console.log('onAuthStateChanged: User IS signed in.', user.email);
       if (authForm) authForm.style.display = 'none';
-      if (userInfoDiv) userInfoDiv.style.display = 'block';
-      if (userEmailInfoSpan) userEmailInfoSpan.textContent = user.email; // Display email
+      if (userInfoDiv) userInfoDiv.style.display = 'block'; // Main userInfo container is visible
 
-      // Fetch and display user's display name
+      if (userInfoMinimized) userInfoMinimized.style.display = 'flex'; // Show minimized view (use flex for alignment)
+      if (userInfoExpanded) userInfoExpanded.style.display = 'none'; // Ensure expanded details are hidden initially
+      if (manageAccountBtn) manageAccountBtn.textContent = 'Manage Account'; // Reset button text
+
+      if (authSectionTitle) {
+           authSectionTitle.textContent = "Account Settings"; // Or just "Account" or hide it.
+           // authSectionTitle.style.display = 'none'; // To hide H2 completely when signed in
+           authSectionTitle.classList.add('minimized-title'); // Or just style it smaller
+      }
+
+      if (userEmailInfoSpan) userEmailInfoSpan.textContent = user.email;
+
       database.ref('users/' + user.uid + '/displayName').once('value')
           .then((snapshot) => {
               const displayName = snapshot.val();
               if (userDisplayNameWelcomeSpan) {
-                  userDisplayNameWelcomeSpan.textContent = displayName || user.email; // Fallback to email if no display name
+                  userDisplayNameWelcomeSpan.textContent = displayName || user.email;
               }
               if (displayNameInput) {
-                  displayNameInput.value = displayName || ''; // Pre-fill input
+                  displayNameInput.value = displayName || '';
               }
           })
-          .catch(error => {
-              console.error("Error fetching display name for welcome message:", error);
-              if (userDisplayNameWelcomeSpan) userDisplayNameWelcomeSpan.textContent = user.email; // Fallback
-          });
+          .catch(error => { /* ... your existing error handling ... */ });
 
       if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.disabled = false;
       loadCurrentPresence();
 
   } else {
+      // User is signed out
       console.log('onAuthStateChanged: User IS NOT signed in or is signed out.');
       if (authForm) authForm.style.display = 'block';
-      if (userInfoDiv) userInfoDiv.style.display = 'none';
-      if (userDisplayNameWelcomeSpan) userDisplayNameWelcomeSpan.textContent = '';
-      if (userEmailInfoSpan) userEmailInfoSpan.textContent = '';
+      if (userInfoDiv) userInfoDiv.style.display = 'none'; // Hide whole userInfo block
 
+      if (authSectionTitle) {
+          authSectionTitle.textContent = "User Authentication";
+          // authSectionTitle.style.display = 'block'; // Ensure H2 is visible
+          authSectionTitle.classList.remove('minimized-title');
+      }
 
+      // ... rest of your sign out UI updates ...
       if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.disabled = true;
       if (whosHereList) whosHereList.innerHTML = '<li>Please sign in to see status.</li>';
       currentUsersInSpace = {};

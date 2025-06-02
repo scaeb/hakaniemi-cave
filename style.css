@@ -29,6 +29,58 @@
     --padding-small: 10px;
 }
 
+/* --- Authentication Section Refinements --- */
+#authSectionTitle.minimized-title { /* Style for when minimized if you want to change it */
+    font-size: 1rem; /* Example: make title smaller */
+    margin-bottom: 10px;
+}
+
+#userInfoMinimized {
+    display: flex;
+    flex-direction: column; /* Stack p and button on mobile */
+    align-items: flex-start; /* Align items to the start */
+    gap: 10px;
+}
+
+#userInfoMinimized p {
+    margin-bottom: 0; /* Remove default bottom margin from p inside here */
+}
+
+/* Style for the new "Manage Account" button to make it less prominent initially */
+button.small-button, #manageAccountBtn {
+    font-family: var(--font-body); /* Using body font for a more subtle look */
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    background-color: var(--color-surface);
+    color: var(--color-primary-slime);
+    border: 1px solid var(--color-primary-slime);
+    text-transform: none; /* Normal case */
+    letter-spacing: 0;
+}
+
+button.small-button:hover, #manageAccountBtn:hover,
+button.small-button:focus, #manageAccountBtn:focus {
+    background-color: var(--color-primary-slime);
+    color: var(--color-background);
+}
+
+#userInfoExpanded div {
+    margin-bottom: 15px;
+}
+#userInfoExpanded label {
+    font-size: 0.9em;
+    margin-bottom: 3px;
+}
+
+/* Responsive adjustment for minimized auth info */
+@media (min-width: 600px) {
+    #userInfoMinimized {
+        flex-direction: row; /* Put welcome message and button side-by-side */
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
 body {
     font-family: var(--font-body);
     background-color: var(--color-background);

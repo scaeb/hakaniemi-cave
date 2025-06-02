@@ -7,26 +7,36 @@
     <link rel="stylesheet" href="style.css">
     </head>
 <body>
-    <section id="auth-section">
-        <h2>User Authentication</h2>
-        <div id="auth-container">
-            <div id="auth-form" style="display: block;">
-                <input type="email" id="emailInput" placeholder="Email">
-                <input type="password" id="passwordInput" placeholder="Password">
-                <button id="signUpBtn">Sign Up</button>
-                <button id="signInBtn">Sign In</button>
-            </div>
-    
-            <div id="userInfo" style="display: none;">
-                <p>Welcome, <span id="userDisplayNameWelcome"></span>! (<span id="userEmailInfo"></span>)</p> <div>
-                    <input type="text" id="displayNameInput" placeholder="Enter your Display Name">
-                    <button id="saveDisplayNameBtn">Save Name</button>
-                </div>
-                <button id="signOutBtn" style="margin-top: 10px;">Sign Out</button>
-            </div>
+        <div id="drip-overlay">
+            <div class="drip"></div>
+            <div class="drip"></div>
+            <div class="drip"></div>
+            <div class="drip"></div>
+            <div class="drip"></div>
+            <div class="drip"></div>
         </div>
-        <p id="authError" style="color: red;"></p>
-    </section>
+
+        <section id="auth-section">
+            <h2 id="authSectionTitle">User Authentication</h2> <div id="auth-container">
+                <div id="auth-form" style="display: block;"> <input type="email" id="emailInput" placeholder="Email">
+                    <input type="password" id="passwordInput" placeholder="Password">
+                    <button id="signUpBtn">Sign Up</button>
+                    <button id="signInBtn">Sign In</button>
+                </div>
+        
+                <div id="userInfo" style="display: none;"> <div id="userInfoMinimized"> <p>Welcome, <span id="userDisplayNameWelcome"></span>! (<span id="userEmailInfo"></span>)</p>
+                        <button id="manageAccountBtn" class="small-button">Manage Account</button> </div>
+                    <div id="userInfoExpanded" style="display: none;"> <div style="margin-top:15px;">
+                            <label for="displayNameInput">Change Display Name:</label>
+                            <input type="text" id="displayNameInput" placeholder="Enter your Display Name">
+                            <button id="saveDisplayNameBtn">Save Name</button>
+                        </div>
+                        <button id="signOutBtn" style="margin-top: 20px;">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+            <p id="authError" style="color: red;"></p>
+        </section>
     <hr>
     <h1>Shared Space Status & Bookings</h1>
 
