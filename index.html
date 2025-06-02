@@ -3,21 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shared Space Reservation</title>
+    <title>hakaniemi cave</title>
     <link rel="stylesheet" href="style.css">
     </head>
 <body>
-        <div id="drip-overlay">
-            <div class="drip"></div>
-            <div class="drip"></div>
-            <div class="drip"></div>
-            <div class="drip"></div>
-            <div class="drip"></div>
-            <div class="drip"></div>
-        </div>
-
+    <div id="drip-overlay">
+        <svg id="slime-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 150" preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="slimeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop class="slime-grad-stop1" offset="0%" />
+                    <stop class="slime-grad-stop2" offset="25%" /> <stop class="slime-grad-stop3" offset="75%" /> <stop class="slime-grad-stop4" offset="100%" />
+                </linearGradient>
+            </defs>
+            <path d="M0,0 L1000,0 L1000,30 
+                     C 950,80 900,60 850,80
+                     C 800,100 780,140 730,100
+                     C 680,60 650,80 600,70
+                     C 550,60 520,120 470,110
+                     C 420,100 400,40 350,60
+                     C 300,80 280,130 230,100
+                     C 180,70 150,90 100,80
+                     C 50,70 20,110 0,60 
+                     L0,0 Z" fill="url(#slimeGradient)" />
+        </svg>
+    </div>
         <section id="auth-section">
-            <h2 id="authSectionTitle">User Authentication</h2> <div id="auth-container">
+            <h2 id="authSectionTitle">who are you</h2> <div id="auth-container">
                 <div id="auth-form" style="display: block;"> <input type="email" id="emailInput" placeholder="Email">
                     <input type="password" id="passwordInput" placeholder="Password">
                     <button id="signUpBtn">Sign Up</button>
@@ -38,13 +49,13 @@
             <p id="authError" style="color: red;"></p>
         </section>
     <hr>
-    <h1>Shared Space Status & Bookings</h1>
+    <h1>whos here and whats up</h1>
 
     <section id="current-status">
-        <h2>Currently in the Space</h2>
+        <h2>current cavedwellers</h2>
         <ul id="whos-here-list">
             </ul>
-        <button id="toggleSpaceStatusBtn">I'm in the space</button>
+        <button id="toggleSpaceStatusBtn">i'm here</button>
     </section>
 
     <section id="calendar-booking">

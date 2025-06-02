@@ -121,7 +121,7 @@ firebase.auth().onAuthStateChanged((user) => {
       if (manageAccountBtn) manageAccountBtn.textContent = 'Manage Account'; // Reset button text
 
       if (authSectionTitle) {
-           authSectionTitle.textContent = "Account Settings"; // Or just "Account" or hide it.
+           authSectionTitle.textContent = "welcome to the cave zone"; // Or just "Account" or hide it.
            // authSectionTitle.style.display = 'none'; // To hide H2 completely when signed in
            authSectionTitle.classList.add('minimized-title'); // Or just style it smaller
       }
@@ -150,14 +150,14 @@ firebase.auth().onAuthStateChanged((user) => {
       if (userInfoDiv) userInfoDiv.style.display = 'none'; // Hide whole userInfo block
 
       if (authSectionTitle) {
-          authSectionTitle.textContent = "User Authentication";
+          authSectionTitle.textContent = "who are you?";
           // authSectionTitle.style.display = 'block'; // Ensure H2 is visible
           authSectionTitle.classList.remove('minimized-title');
       }
 
       // ... rest of your sign out UI updates ...
       if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.disabled = true;
-      if (whosHereList) whosHereList.innerHTML = '<li>Please sign in to see status.</li>';
+      if (whosHereList) whosHereList.innerHTML = '<li>sign in to see whos dwelling in the cave</li>';
       currentUsersInSpace = {};
       updateButtonText();
   }
@@ -175,10 +175,10 @@ function loadCurrentPresence() {
 
       if (Object.keys(currentUsersInSpace).length === 0) {
           const listItem = document.createElement('li');
-          listItem.textContent = 'The space is currently empty.';
+          listItem.textContent = 'the cave is currently empty.';
           whosHereList.appendChild(listItem);
       } else {
-          console.log("Users currently in space (UIDs):", currentUsersInSpace);
+          console.log("Users currently in cave (UIDs):", currentUsersInSpace);
           Object.keys(currentUsersInSpace).forEach(uidInSpace => {
               if (currentUsersInSpace.hasOwnProperty(uidInSpace)) {
                   const listItem = document.createElement('li');
@@ -217,7 +217,7 @@ function loadCurrentPresence() {
       updateButtonText();
   }, (error) => {
       console.error("Error loading presence data: ", error);
-      if (whosHereList) whosHereList.innerHTML = '<li>Error loading presence. Check console and DB rules.</li>';
+      if (whosHereList) whosHereList.innerHTML = '<li>error loading presence. check console and DB rules.</li>';
   });
 }
 
@@ -238,12 +238,12 @@ toggleSpaceStatusBtn.addEventListener('click', () => {
   if (currentUsersInSpace[userUid]) {
       // User is in, so remove them
       userPresenceRef.remove()
-          .then(() => console.log(currentUser.email + ' left the space.'))
+          .then(() => console.log(currentUser.email + ' left the cave.'))
           .catch(error => console.error('Error leaving space:', error));
   } else {
       // User is not in, so add them (your rules validate boolean or null)
       userPresenceRef.set(true)
-          .then(() => console.log(currentUser.email + ' entered the space.'))
+          .then(() => console.log(currentUser.email + ' entered the cave.'))
           .catch(error => console.error('Error entering space:', error));
   }
 });
@@ -252,9 +252,9 @@ toggleSpaceStatusBtn.addEventListener('click', () => {
 function updateButtonText() {
   const currentUser = firebase.auth().currentUser;
   if (currentUser && currentUsersInSpace[currentUser.uid]) {
-      toggleSpaceStatusBtn.textContent = 'I\'ve left the space';
+      toggleSpaceStatusBtn.textContent = 'I\'ve left the cave';
   } else {
-      toggleSpaceStatusBtn.textContent = 'I\'m in the space';
+      toggleSpaceStatusBtn.textContent = 'I\'m in the cave';
   }
   // Disable button if no user is logged in (also handled by onAuthStateChanged)
   toggleSpaceStatusBtn.disabled = !currentUser;
