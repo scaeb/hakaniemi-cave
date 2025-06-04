@@ -347,6 +347,138 @@ button:disabled {
     margin-top: 10px;
 }
 
+/* --- Calendar Booking Section --- */
+#calendar-container { /* Changed from #calendar */
+    min-height: 500px; /* Give it some default height */
+    background-color: var(--color-surface); /* Match section background */
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius-main);
+    padding: var(--padding-small); /* Add some padding around the calendar */
+    margin-bottom: 20px; /* Space below calendar before form */
+}
+
+.fc .fc-button, /* General button class */
+.fc .fc-button-primary { /* Default button class FC uses */
+    background-color: var(--color-primary-slime) !important; /* Use !important if needed to override defaults */
+    border-color: var(--color-primary-slime-darker) !important;
+    color: var(--color-background) !important; /* Dark text on bright button */
+    text-transform: lowercase; /* Already set globally, but good to reiterate if needed */
+    font-family: var(--font-body); /* CHANGED: Using body font for better readability on small buttons */
+    font-size: 0.9em; /* Adjust size for body font */
+    box-shadow: none !important; /* Remove default FC shadows if any */
+    padding: 6px 10px; /* Adjust padding */
+}
+
+.fc .fc-button:hover,
+.fc .fc-button-primary:hover,
+.fc .fc-button:focus,
+.fc .fc-button-primary:focus {
+    background-color: var(--color-primary-slime-darker) !important;
+    border-color: var(--color-primary-slime-darker) !important;
+    color: var(--color-background) !important;
+}
+
+.fc .fc-button-active, /* Active view button (e.g., "month" when month view is active) */
+.fc .fc-button-primary:active {
+    background-color: var(--color-primary-slime-dark) !important; /* Even darker for active state */
+    border-color: var(--color-primary-slime-dark) !important;
+    color: var(--color-background) !important;
+}
+
+.fc .fc-button:disabled,
+.fc .fc-button-primary:disabled {
+    background-color: var(--color-text-muted) !important;
+    border-color: var(--color-text-muted) !important;
+    color: var(--color-surface) !important;
+    opacity: 0.7;
+}
+
+/* Toolbar title ("june 2025") */
+.fc .fc-toolbar-title {
+    font-family: var(--font-heading); /* 'Press Start 2P' */
+    color: var(--color-primary-slime);
+    font-size: 0.5em; /* Slightly increased for impact, adjust as needed */
+    text-transform: lowercase; /* Ensure it follows global style */
+}
+
+/* Day headers (sun, mon, tue, etc.) */
+.fc .fc-col-header-cell { /* Targets the entire header cell (th) */
+    background-color: var(--color-surface) !important; /* Ensure dark background from your theme */
+    border-color: var(--color-border) !important; /* Match your theme's border */
+}
+
+.fc .fc-col-header-cell-cushion { /* Targets the text container inside the header cell */
+    color: var(--color-primary-slime) !important; /* Make text slime green, use !important if needed */
+    font-family: var(--font-body);
+    font-size: 0.9em;
+    padding: 8px 0; /* Adjust padding as needed */
+    text-transform: lowercase;
+    display: block; /* Ensure it takes up space to show background if parent has issues */
+    width: 100%;
+    text-align: center;
+}
+
+/* Date numbers in the grid */
+.fc .fc-daygrid-day-number,
+.fc .fc-timegrid-axis-cushion { /* For time labels in timeGrid views */
+    color: var(--color-text-muted);
+    font-family: var(--font-body);
+    font-size: 0.9em;
+}
+
+.fc .fc-day-today .fc-daygrid-day-number, /* Today's date number */
+.fc .fc-day-today { /* Today's cell background */
+    background-color: rgba(57, 255, 20, 0.1) !important; /* Faint slime green, !important to override defaults */
+}
+.fc .fc-day-today .fc-daygrid-day-number {
+     color: var(--color-primary-slime-light) !important; /* Brighter color for today's number */
+     font-weight: bold;
+}
+
+
+/* Event Styling */
+.fc-event { /* General event styling */
+    font-family: var(--font-body);
+    font-size: 0.85em; /* Keep event text readable */
+    border-radius: 3px;
+    border-width: 1px;
+    padding: 2px 4px;
+}
+/* Default event color (can be overridden by event-specific colors from JS) */
+.fc-event,
+.fc-event-dot {
+    background-color: var(--color-secondary-punk-pink); /* Example: Punk pink for default events */
+    border-color: var(--color-secondary-punk-pink);
+}
+.fc-event-main {
+    color: var(--color-text); /* Text color for events */
+}
+
+/* Your event background colors from JS will override this if set:
+   backgroundColor: data.userId === currentUser.uid ? 'var(--color-primary-slime-darker)' : 'var(--color-text-muted)',
+   borderColor: data.userId === currentUser.uid ? 'var(--color-primary-slime)' : 'var(--color-border)'
+   Ensure these CSS variables are correctly picked up or use hex codes directly in JS if there's an issue.
+*/
+
+
+/* Background of time slots and day cells */
+.fc-theme-standard td, .fc-theme-standard th { /* Table cells */
+    border-color: var(--color-border);
+}
+.fc .fc-timegrid-slot-lane, /* Background of time slots in week/day view */
+.fc .fc-daygrid-day { /* Background of day cells in month view */
+    background-color: rgba(0,0,0,0.1); /* Slightly darker than section surface for contrast */
+}
+
+/* Booking form styling */
+#booking-form-container input[type="datetime-local"],
+#booking-form-container input[type="text"] {
+    margin-bottom: 10px;
+}
+#booking-form-container button {
+    margin-right: 10px;
+}
+
 /* --- Current Status Section --- */
 #whos-here-list {
     list-style: none; /* Remove default bullets */

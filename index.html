@@ -60,17 +60,27 @@
     </section>
 
     <section id="calendar-booking">
-        <h2>Book Your Time</h2>
-        <div id="calendar">
-            </div>
-        </section>
-
+        <h2>book your time</h2>
+        <div id="calendar-container"> <!-- Changed ID for clarity -->
+            <!-- Calendar will be rendered here -->
+        </div>
+        <!-- Optional: Add a simple form for booking details if not using direct calendar interaction -->
+        <div id="booking-form-container" style="margin-top: 15px; display: none;">
+             <input type="datetime-local" id="bookingStartTime" />
+             <input type="datetime-local" id="bookingEndTime" />
+             <input type="text" id="bookingTitle" placeholder="booking title (optional)" />
+             <button id="saveBookingBtn">save booking</button>
+             <button id="cancelBookingBtn">cancel</button>
+        </div>
+    </section>
         <script src="https://www.gstatic.com/firebasejs/11.8.0/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/11.8.0/firebase-auth-compat.js"></script>  
         <script src="https://www.gstatic.com/firebasejs/11.8.0/firebase-database-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore-compat.js"></script>
+        <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js'></script>
         <script src="firebase-init.js"></script>
         <script src="auth.js"></script>
         <script src="presence.js"></script>
+        <script src="calendar.js"></script>
     </body>
     </html>
