@@ -99,43 +99,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 stopPresenceTimer(); // Stop timer if no one is here
             } else {
                 console.log("Users currently in cave:", currentUsersInSpace);
-                Object.keys(currentUsersInSpace).forEach(uidInSpace => {
-                    if (currentUsersInSpace.hasOwnProperty(uidInSpace)) {
-                        const presenceData = currentUsersInSpace[uidInSpace];
-                        const listItem = document.createElement('li');
-                        listItem.id = 'presence-user-' + uidInSpace;
-                        listItem.textContent = `loading ${uidInSpace.substring(0, 6)}...`;
-                        if (whosHereList) whosHereList.appendChild(listItem);
+                const userPromises = Object.keys(currentUsersInSpace).map(uidInSpace => {
+                    const listItem = document.createElement('li');
+                    listItem.id = 'presence-user-' + uidInSpace;
+                    listItem.textContent = `loading ${uidInSpace.substring(0, 6)}...`;
+                    if (whosHereList) whosHereList.appendChild(listItem);
 
-                        database.ref('users/' + uidInSpace + '/displayName').once('value')
-                            .then(nameSnapshot => {
-                                const displayName = nameSnapshot.val();
-                                const userIdentifier = displayName || (currentUser && uidInSpace === currentUser.uid ? currentUser.email : `user (${uidInSpace.substring(0, 6)}...)`);
-                                let mainText = (currentUser && uidInSpace === currentUser.uid) ? `you (${userIdentifier})` : userIdentifier;
-                                
-                                let contentHTML = `<span class="presence-name">${mainText}</span>`;
-                                
-                                if (presenceData && typeof presenceData === 'object' && presenceData.activity) {
-                                    contentHTML += ` - <span class="presence-activity">${presenceData.activity}</span>`;
-                                }
-                                if (presenceData && typeof presenceData === 'object' && presenceData.enteredAt) {
-                                    contentHTML += ` <span class="presence-time" data-timestamp="${presenceData.enteredAt}"></span>`;
-                                }
-                                
-                                const existingListItem = document.getElementById('presence-user-' + uidInSpace);
-                                if (existingListItem) existingListItem.innerHTML = contentHTML;
-                            })
-                            .catch(error => {
-                                console.error(`Error fetching display name for UID ${uidInSpace}:`, error);
-                                const existingListItem = document.getElementById('presence-user-' + uidInSpace);
-                                if (existingListItem) {
-                                    existingListItem.textContent = `user (${uidInSpace.substring(0, 6)}...)`;
-                                }
-                            });
-                    }
+                    // Return the promise from the database call
+                    return database.ref('users/' + uidInSpace + '/displayName').once('value')
+                        .then(nameSnapshot => {
+                            const presenceData = currentUsersInSpace[uidInSpace];
+                            const displayName = nameSnapshot.val();
+                            const userIdentifier = displayName || (currentUser && uidInSpace === currentUser.uid ? currentUser.email : `user (${uidInSpace.substring(0, 6)}...)`);
+                            let mainText = (currentUser && uidInSpace === currentUser.uid) ? `you (${userIdentifier})` : userIdentifier;
+                            
+                            let contentHTML = `<span class="presence-name">${mainText}</span>`;
+                            
+                            if (presenceData && typeof presenceData === 'object' && presenceData.activity) {
+                                contentHTML += ` - <span class="presence-activity">${presenceData.activity}</span>`;
+                            }
+                            if (presenceData && typeof presenceData === 'object' && presenceData.enteredAt) {
+                                contentHTML += ` <span class="presence-time" data-timestamp="${presenceData.enteredAt}"></span>`;
+                            }
+                            
+                            const existingListItem = document.getElementById('presence-user-' + uidInSpace);
+                            if (existingListItem) existingListItem.innerHTML = contentHTML;
+                        })
+                        .catch(error => {
+                            console.error(`Error fetching display name for UID ${uidInSpace}:`, error);
+                            const existingListItem = document.getElementById('presence-user-' + uidInSpace);
+                            if (existingListItem) {
+                                existingListItem.textContent = `user (${uidInSpace.substring(0, 6)}...)`;
+                            }
+                        });
                 });
-                startPresenceTimer(); // Start/restart the timer
+
+                // Wait for all the displayName fetches to complete
+                Promise.all(userPromises).then(() => {
+                    console.log("All user display names loaded, starting presence timer.");
+                    startPresenceTimer(); // Start the timer only after the DOM is fully updated
+                });
             }
+            
             if (currentUser && !currentUsersInSpace[currentUser.uid] && isConfirmingPresence) {
                 isConfirmingPresence = false;
                 if (presenceActivityInput) presenceActivityInput.style.display = 'none';
