@@ -533,6 +533,29 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
     border-radius: var(--border-radius-main);
     font-size: 0.95rem;
     word-break: break-all;
+    display: flex;
+    justify-content: flex-start; /* Align main content to the left */
+    align-items: center;
+    flex-wrap: wrap; /* Allows wrapping on small screens */
+    gap: 0 8px; /* Add a small gap between items on the same line */
+}
+
+.presence-name {
+    /* This will contain the main user name/identifier */
+    font-weight: bold;
+}
+
+.presence-activity {
+    font-style: italic;
+    color: var(--color-text-muted);
+}
+
+.presence-time {
+    font-size: 0.8em;
+    color: var(--color-primary-slime);
+    margin-left: auto; /* This pushes the time to the far right */
+    padding-left: 15px; /* Adds space so it doesn't touch other text */
+    white-space: nowrap; /* Prevents "(for 1h 15m)" from breaking into two lines */
 }
 
 #whos-here-list li:last-child {

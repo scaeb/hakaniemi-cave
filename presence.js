@@ -1,20 +1,61 @@
 // presence.js
 
-// Global variable for this module
+// --- File-scoped variables for presence logic ---
 let isConfirmingPresence = false;
 let currentUsersInSpace = {}; // Keep track of users in space
+let presenceTimerInterval = null; // To hold the interval timer
+const DURATION_UPDATE_INTERVAL_MS = 30000; // Update durations every 30 seconds
+
+// --- Helper function to format duration from milliseconds ---
+function formatDuration(ms) {
+    if (ms < 0) ms = 0;
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    if (minutes > 0) {
+        return `${minutes}m`;
+    }
+    return `< 1m`;
+}
+
+// --- Functions to manage the duration timer ---
+function updatePresenceDurations() {
+    const timeElements = document.querySelectorAll('.presence-time');
+    timeElements.forEach(el => {
+        const timestamp = parseInt(el.dataset.timestamp, 10);
+        if (!isNaN(timestamp)) {
+            const durationMs = Date.now() - timestamp;
+            el.textContent = `(for ${formatDuration(durationMs)})`;
+        }
+    });
+}
+
+function startPresenceTimer() {
+    if (presenceTimerInterval) clearInterval(presenceTimerInterval); // Clear existing timer
+    updatePresenceDurations(); // Update immediately
+    presenceTimerInterval = setInterval(updatePresenceDurations, DURATION_UPDATE_INTERVAL_MS);
+}
+
+function stopPresenceTimer() {
+    if (presenceTimerInterval) {
+        clearInterval(presenceTimerInterval);
+        presenceTimerInterval = null;
+    }
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Presence DOM Elements
+    // --- DOM Element Getters ---
     const whosHereList = document.getElementById('whos-here-list');
     const toggleSpaceStatusBtn = document.getElementById('toggleSpaceStatusBtn');
     const presenceActivityInput = document.getElementById('presenceActivityInput');
-    // const userNameSelect = document.getElementById('userName'); // No longer used for presence logic
 
-    // Function to update the presence button text and activity input visibility
-    // Make it globally accessible if called from auth.js, or ensure auth.js calls its own UI updates
-    // For now, keeping it local and called by loadCurrentPresence and toggleSpaceStatusBtn
-    window.updateButtonText = function() { // Expose to global scope for auth.js if needed
+    // --- Main Presence Functions ---
+    window.updateButtonText = function() {
         const currentUser = firebase.auth().currentUser;
         if (!currentUser) {
             if (toggleSpaceStatusBtn) {
@@ -35,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (isConfirmingPresence) {
                 if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.textContent = 'confirm i\'m here';
-                // presenceActivityInput should be visible if isConfirmingPresence is true
             } else {
                 if (toggleSpaceStatusBtn) toggleSpaceStatusBtn.textContent = 'i\'m here';
                 if (presenceActivityInput) presenceActivityInput.style.display = 'none';
@@ -43,12 +83,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Function to load and display current presence
-    // Make it globally accessible if called from auth.js
     window.loadCurrentPresence = function() {
         const presenceRef = database.ref('current_presence');
         presenceRef.on('value', (snapshot) => {
-            if (whosHereList) whosHereList.innerHTML = ''; // Clear current list
+            if (whosHereList) whosHereList.innerHTML = '';
             currentUsersInSpace = snapshot.val() || {};
             const currentUser = firebase.auth().currentUser;
 
@@ -58,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     listItem.textContent = 'the cave is currently empty.';
                     whosHereList.appendChild(listItem);
                 }
+                stopPresenceTimer(); // Stop timer if no one is here
             } else {
                 console.log("Users currently in cave:", currentUsersInSpace);
                 Object.keys(currentUsersInSpace).forEach(uidInSpace => {
@@ -73,40 +112,42 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const displayName = nameSnapshot.val();
                                 const userIdentifier = displayName || (currentUser && uidInSpace === currentUser.uid ? currentUser.email : `user (${uidInSpace.substring(0, 6)}...)`);
                                 let mainText = (currentUser && uidInSpace === currentUser.uid) ? `you (${userIdentifier})` : userIdentifier;
-                                let fullText = mainText;
+                                
+                                let contentHTML = `<span class="presence-name">${mainText}</span>`;
+                                
                                 if (presenceData && typeof presenceData === 'object' && presenceData.activity) {
-                                    fullText += ` - ${presenceData.activity}`;
+                                    contentHTML += ` - <span class="presence-activity">${presenceData.activity}</span>`;
+                                }
+                                if (presenceData && typeof presenceData === 'object' && presenceData.enteredAt) {
+                                    contentHTML += ` <span class="presence-time" data-timestamp="${presenceData.enteredAt}"></span>`;
                                 }
                                 
                                 const existingListItem = document.getElementById('presence-user-' + uidInSpace);
-                                if (existingListItem) existingListItem.textContent = fullText;
+                                if (existingListItem) existingListItem.innerHTML = contentHTML;
                             })
                             .catch(error => {
                                 console.error(`Error fetching display name for UID ${uidInSpace}:`, error);
                                 const existingListItem = document.getElementById('presence-user-' + uidInSpace);
                                 if (existingListItem) {
-                                    let fallbackText = (currentUser && uidInSpace === currentUser.uid) ? `you (uid: ${uidInSpace.substring(0,6)})` : `user (${uidInSpace.substring(0, 6)}...)`;
-                                    if (presenceData && typeof presenceData === 'object' && presenceData.activity) {
-                                        fallbackText += ` - ${presenceData.activity}`;
-                                    }
-                                    existingListItem.textContent = fallbackText;
+                                    existingListItem.textContent = `user (${uidInSpace.substring(0, 6)}...)`;
                                 }
                             });
                     }
                 });
+                startPresenceTimer(); // Start/restart the timer
             }
             if (currentUser && !currentUsersInSpace[currentUser.uid] && isConfirmingPresence) {
                 isConfirmingPresence = false;
                 if (presenceActivityInput) presenceActivityInput.style.display = 'none';
             }
-            updateButtonText(); // Call local updateButtonText
+            updateButtonText();
         }, (error) => {
             console.error("Error loading presence data: ", error);
             if (whosHereList) whosHereList.innerHTML = '<li>error loading presence. check console and db rules.</li>';
         });
     }
 
-    // Toggle Space Status Button Logic
+    // --- Event Listeners ---
     if (toggleSpaceStatusBtn) {
         toggleSpaceStatusBtn.addEventListener('click', () => {
             const currentUser = firebase.auth().currentUser;
@@ -132,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isConfirmingPresence) {
                     const activityText = presenceActivityInput.value.trim();
                     const presenceData = {
-                        enteredAt: firebase.database.ServerValue.TIMESTAMP,
+                        enteredAt: firebase.database.ServerValue.TIMESTAMP, // Store timestamp
                         activity: activityText || ""
                     };
                     userPresenceRef.set(presenceData)
@@ -148,13 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         presenceActivityInput.focus();
                     }
                     isConfirmingPresence = true;
-                    updateButtonText(); // Call local updateButtonText
+                    updateButtonText();
                 }
             }
         });
     }
-
-    // Initial call to set button state if a user is already logged in when script loads
-    // This might be better handled by onAuthStateChanged calling updateButtonText
-    // updateButtonText(); // Call local updateButtonText
 });
