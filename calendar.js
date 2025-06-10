@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectable: true,
         selectMirror: true,
         nowIndicator: true,
+        longPressDelay: 1,
         slotMinTime: "08:00:00",
         slotMaxTime: "23:00:00",
         height: 'auto',
