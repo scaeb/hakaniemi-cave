@@ -516,6 +516,100 @@ button:disabled {
     padding: var(--padding-main);
 }
 
+/* --- Modals --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75); /* Dark overlay */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* Ensure it's on top */
+    padding: 15px; /* Padding for small screens so modal isn't edge-to-edge */
+}
+
+.modal-content {
+    background-color: var(--color-surface);
+    padding: 20px;
+    border-radius: var(--border-radius-main);
+    border: 1px solid var(--color-primary-slime);
+    box-shadow: 0 0 25px rgba(57, 255, 20, 0.3); /* Slime green glow */
+    width: 100%;
+    max-width: 450px; /* Max width of the modal */
+    text-align: left; /* Override section text-align:center if needed */
+    color: var(--color-text);
+    /* Animation (optional) */
+    animation: fadeInModal 0.3s ease-out;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-content h3 {
+    font-family: var(--font-heading);
+    color: var(--color-primary-slime);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+    text-align: center;
+}
+
+#modalEventDetails p {
+    margin-bottom: 8px;
+    font-size: 0.95em;
+    word-break: break-word;
+}
+#modalEventDetails p strong {
+    color: var(--color-primary-slime);
+    text-transform: lowercase; /* Ensure consistency */
+}
+
+.modal-actions {
+    margin-top: 20px;
+    text-align: right; /* Align buttons to the right */
+    display: flex;
+    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+    justify-content: flex-end; /* Align buttons to the end (right) */
+    gap: 10px; /* Space between buttons */
+}
+
+.modal-button {
+    /* Inherits general button styles, can add specific overrides */
+    padding: 8px 12px;
+    font-size: 0.75rem; /* Slightly smaller for modal buttons */
+    display: inline-block; /* Reset block from global if needed */
+    width: auto; /* Reset width from global if needed */
+    margin-left: 0; /* Reset margin from global if needed */
+}
+
+.modal-button-danger {
+    background-color: var(--color-secondary-punk-pink);
+    color: var(--color-text);
+}
+.modal-button-danger:hover,
+.modal-button-danger:focus {
+    background-color: #cc00cc; /* Darker pink */
+}
+
+.modal-button-secondary {
+    background-color: var(--color-text-muted);
+    color: var(--color-surface);
+}
+.modal-button-secondary:hover,
+.modal-button-secondary:focus {
+    background-color: #666666;
+}
+
+/* Ensure global text-transform applies if not already */
+.modal-content, .modal-content p, .modal-content h3, .modal-button {
+    text-transform: lowercase; /* Or uppercase, matching your global style */
+}
+
 /* --- Responsive Adjustments --- */
 
 /* For tablets and small desktops */
