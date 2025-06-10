@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- FullCalendar Initialization ---
     calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'timeGridWeek',
+        initialView: 'dayGridMonth',
         firstDay: 1, // Week starts on Monday
         locale: 'fi', // Finnish locale
         headerToolbar: {
