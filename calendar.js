@@ -108,17 +108,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Populate and show the Event Action Modal
             if (modalEventTitle) modalEventTitle.textContent = eventDetailsForModal.title || '(no title)';
-            if (modalEventStart) modalEventStart.textContent = eventDetailsForModal.start ? eventDetailsForModal.start.toLocaleString('fi-FI') : 'n/a';
-            if (modalEventEnd) modalEventEnd.textContent = eventDetailsForModal.end ? eventDetailsForModal.end.toLocaleString('fi-FI') : 'n/a';
+            if (modalEventStart) modalEventStart.textContent = eventDetailsForModal.start ? formatFinnishDateTime(eventDetailsForModal.start) : 'n/a';
+            if (modalEventEnd) modalEventEnd.textContent = eventDetailsForModal.end ? formatFinnishDateTime(eventDetailsForModal.end) : 'n/a';
             if (modalEventUser) modalEventUser.textContent = eventDetailsForModal.displayName || 'unknown user';
 
             if (eventDetailsForModal.userId === currentUser.uid) {
-                // User owns the event, show Edit and Delete buttons
                 if (modalEditBtn) modalEditBtn.style.display = 'inline-block';
                 if (modalDeleteBtn) modalDeleteBtn.style.display = 'inline-block';
                 if (modalActionTitle) modalActionTitle.textContent = "your booking";
             } else {
-                // User does not own the event, hide Edit and Delete
                 if (modalEditBtn) modalEditBtn.style.display = 'none';
                 if (modalDeleteBtn) modalDeleteBtn.style.display = 'none';
                 if (modalActionTitle) modalActionTitle.textContent = "booking details";
@@ -193,12 +191,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (editingEventId) {
                         bookingData.lastUpdatedAt = firebase.firestore.FieldValue.serverTimestamp();
                         firestore.collection('bookings').doc(editingEventId).update(bookingData)
-                            .then(() => { console.log("Booking updated!"); resetBookingForm(); })
+                            .then(() => {
+                                console.log("Booking updated!");
+                                if (calendar) calendar.refetchEvents(); // Explicitly refetch events
+                                resetBookingForm();
+                            })
                             .catch(error => { console.error("Error updating booking: ", error); alert("error: " + error.message); });
                     } else {
                         bookingData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                         firestore.collection('bookings').add(bookingData)
-                            .then(docRef => { console.log("Booking saved with ID: ", docRef.id); resetBookingForm(); })
+                            .then(docRef => {
+                                console.log("Booking saved with ID: ", docRef.id);
+                                if (calendar) calendar.refetchEvents(); // Explicitly refetch events
+                                resetBookingForm();
+                            })
                             .catch(error => { console.error("Error adding booking: ", error); alert("error: " + error.message); });
                     }
                 })
@@ -212,7 +218,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-
     // --- Modal Event Listeners ---
     if (modalActionCloseBtn) {
         modalActionCloseBtn.addEventListener('click', () => {
@@ -220,7 +225,6 @@ document.addEventListener('DOMContentLoaded', function() {
             eventDetailsForModal = null;
         });
     }
-
     if (modalEditBtn) {
         modalEditBtn.addEventListener('click', () => {
             if (eventActionModal) eventActionModal.style.display = 'none';
@@ -230,17 +234,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     title: eventDetailsForModal.title,
                     start: eventDetailsForModal.start,
                     end: eventDetailsForModal.end,
-                    extendedProps: {
-                        userId: eventDetailsForModal.userId,
-                        displayName: eventDetailsForModal.displayName
-                    }
+                    extendedProps: { userId: eventDetailsForModal.userId, displayName: eventDetailsForModal.displayName }
                 };
                 editBooking(mockEventToEdit);
             }
             eventDetailsForModal = null;
         });
     }
-
     if (modalDeleteBtn) {
         modalDeleteBtn.addEventListener('click', () => {
             if (eventActionModal) eventActionModal.style.display = 'none';
@@ -250,7 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
     if (confirmDeleteDoBtn) {
         confirmDeleteDoBtn.addEventListener('click', () => {
             if (eventDetailsForModal && eventDetailsForModal.id) {
@@ -260,7 +259,6 @@ document.addEventListener('DOMContentLoaded', function() {
             eventDetailsForModal = null;
         });
     }
-
     if (confirmDeleteCancelBtn) {
         confirmDeleteCancelBtn.addEventListener('click', () => {
             if (confirmDeleteModal) confirmDeleteModal.style.display = 'none';
@@ -282,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Firebase Auth State Listener for Calendar ---
     firebase.auth().onAuthStateChanged(user => {
-        if (calendar) { // Ensure calendar is initialized
+        if (calendar) {
             if (user) {
                 console.log("Calendar: User signed in, refetching events.");
                 calendar.refetchEvents();
@@ -299,6 +297,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // --- Helper Functions (Defined at the file scope) ---
+
+function formatFinnishDateTime(date) {
+    if (!(date instanceof Date) || isNaN(date)) return 'n/a';
+    const options = {
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+        hour12: false, // Use 24-hour clock
+        timeZone: 'Europe/Helsinki' // Or rely on browser's local timezone
+    };
+    // .replace is a simple way to get DD.MM.YYYY format
+    return new Intl.DateTimeFormat('fi-FI', options).format(date).replace(/\//g, '.');
+}
 
 function resetBookingForm() {
     const bookingFormContainer = document.getElementById('booking-form-container');
@@ -320,7 +330,7 @@ function resetBookingForm() {
 
 function convertToDateTimeLocalString(date) {
     if (!(date instanceof Date) || isNaN(date)) {
-        console.warn("convertToDateTimeLocalString received an invalid date:", date);
+        console.warn("convertToDateTimeLocalString invalid date:", date);
         const now = new Date();
         return `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
     }
@@ -335,7 +345,12 @@ function convertToDateTimeLocalString(date) {
 function deleteBooking(bookingId) {
     if (!bookingId) { console.error("ID missing for deletion."); alert("cannot delete."); return; }
     firestore.collection('bookings').doc(bookingId).delete()
-        .then(() => { console.log("Booking deleted!"); alert("booking deleted."); resetBookingForm(); })
+        .then(() => {
+            console.log("Booking deleted!");
+            alert("booking deleted.");
+            if (calendar) calendar.refetchEvents(); // Explicitly refetch events
+            resetBookingForm();
+        })
         .catch((error) => { console.error("Error deleting: ", error); alert("error: " + error.message); });
 }
 
